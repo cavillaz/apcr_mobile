@@ -14,3 +14,8 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+##### Antes de subir al Git se debe de compilar la aplicacion 
+flutter build web 
+
+##### y proceder a subir a GIT para que se despliegue en vercel 
