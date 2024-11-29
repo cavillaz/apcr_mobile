@@ -85035,7 +85035,7 @@ A.rj.prototype={
 q_(a){return this.akE(a)},
 akE(a){var s=0,r=A.O(t.H),q=this,p,o,n,m,l,k
 var $async$q_=A.P(function(b,c){if(b===1)return A.L(c,r)
-while(true)switch(s){case 0:n=A.eP("http://34.170.125.148:8080/api/login")
+while(true)switch(s){case 0:n=A.eP("https://api.softnerdapcr.icu/api/login")
 m=t.N
 l=A.au(["Content-Type","application/json"],m,m)
 s=2
@@ -85093,7 +85093,7 @@ A.rR.prototype={
 zR(a,b){return this.amD(0,b)},
 amD(a,b){var s=0,r=A.O(t.H),q=this,p,o,n,m
 var $async$zR=A.P(function(c,d){if(c===1)return A.L(d,r)
-while(true)switch(s){case 0:p=A.eP("http://34.170.125.148:8080/api/register")
+while(true)switch(s){case 0:p=A.eP("https://01de-34-170-125-148.ngrok-free.app/api/register")
 o=t.N
 n=A.au(["Content-Type","application/json"],o,o)
 s=2
