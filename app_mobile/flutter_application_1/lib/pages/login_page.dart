@@ -14,7 +14,7 @@ class LoginPage extends StatelessWidget {
 
   Future<void> login(BuildContext context) async {
     final String apiUrl =
-        'http://34.170.125.148:8080/api/login'; // Coloca tu URL de la API
+        'https://01de-34-170-125-148.ngrok-free.app/api/login'; // Coloca tu URL de la API
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: {
