@@ -13,7 +13,7 @@ class RegisterPage extends StatelessWidget {
 
   Future<void> register(BuildContext context) async {
     final String apiUrl =
-        'https://01de-34-170-125-148.ngrok-free.app/api/register'; // URL del endpoint
+        'https://api.softnerdapcr.icu/api/register'; // URL del endpoint
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: {

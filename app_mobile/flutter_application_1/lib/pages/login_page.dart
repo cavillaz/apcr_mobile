@@ -13,7 +13,7 @@ class LoginPage extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> login(BuildContext context) async {
-    final String apiUrl =
+    const String apiUrl =
         'https://api.softnerdapcr.icu/api/login'; // Coloca tu URL de la API
     final response = await http.post(
       Uri.parse(apiUrl),
