@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_page.dart';
-import 'register_page.dart'; // Importa la página de registro
+import 'register_page.dart';
 
 class LoginPage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
@@ -11,9 +11,7 @@ class LoginPage extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> login(BuildContext context) async {
-    const String apiUrl =
-        'https://api.softnerdapcr.icu/api/login'; // Cambia a tu URL de la API
-
+    const String apiUrl = 'https://api.softnerdapcr.icu/api/login';
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -21,19 +19,17 @@ class LoginPage extends StatelessWidget {
           'Content-Type': 'application/json',
         },
         body: json.encode({
-          'email': emailController.text.trim(),
-          'password': passwordController.text.trim(),
+          'email': emailController.text,
+          'password': passwordController.text,
         }),
       );
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-
-        if (responseData.containsKey('token') &&
-            responseData['token'] != null) {
+        if (responseData['token'] != null) {
           String token = responseData['token'];
 
-          // Almacenar el token usando SharedPreferences
+          // Almacenar el token
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', token);
 
@@ -43,12 +39,11 @@ class LoginPage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => WelcomePage()),
           );
         } else {
-          _showErrorDialog(context, 'Error en el servidor: token no recibido');
+          _showErrorDialog(context, 'No se recibió el token.');
         }
       } else {
-        final errorMessage =
-            json.decode(response.body)['error'] ?? 'Error desconocido';
-        _showErrorDialog(context, errorMessage);
+        _showErrorDialog(
+            context, 'Credenciales inválidas o error en el servidor.');
       }
     } catch (error) {
       _showErrorDialog(context, 'Error de conexión: $error');
@@ -87,18 +82,13 @@ class LoginPage extends StatelessWidget {
               TextFormField(
                 controller: emailController,
                 decoration: InputDecoration(labelText: 'Correo electrónico'),
-                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value!.isEmpty) {
                     return 'Ingrese su correo';
                   }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Ingrese un correo válido';
-                  }
                   return null;
                 },
               ),
-              SizedBox(height: 16),
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(labelText: 'Contraseña'),
