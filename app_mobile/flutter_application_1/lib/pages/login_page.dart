@@ -1,5 +1,3 @@
-// lib/pages/login_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,7 +11,8 @@ class LoginPage extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> login(BuildContext context) async {
-    const String apiUrl = 'https://api.softnerdapcr.icu/api/login';
+    const String apiUrl =
+        'https://api.softnerdapcr.icu/api/login'; // Cambia a tu URL de la API
 
     try {
       final response = await http.post(
@@ -22,59 +21,54 @@ class LoginPage extends StatelessWidget {
           'Content-Type': 'application/json',
         },
         body: json.encode({
-          'email': emailController.text,
-          'password': passwordController.text,
+          'email': emailController.text.trim(),
+          'password': passwordController.text.trim(),
         }),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        String token = responseData['token'];
 
-        // Almacenar el token usando shared_preferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
+        if (responseData.containsKey('token') &&
+            responseData['token'] != null) {
+          String token = responseData['token'];
 
-        // Navegar a la pantalla de bienvenida
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => WelcomePage()),
-        );
+          // Almacenar el token usando SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
+
+          // Navegar a la pantalla de bienvenida
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => WelcomePage()),
+          );
+        } else {
+          _showErrorDialog(context, 'Error en el servidor: token no recibido');
+        }
       } else {
-        print('Error response: ${response.body}');
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Correo o contraseña inválidos'),
-            actions: [
-              TextButton(
-                child: Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
+        final errorMessage =
+            json.decode(response.body)['error'] ?? 'Error desconocido';
+        _showErrorDialog(context, errorMessage);
       }
     } catch (error) {
-      print('Error during login: $error');
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Ocurrió un error al iniciar sesión'),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog(context, 'Error de conexión: $error');
     }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -93,13 +87,18 @@ class LoginPage extends StatelessWidget {
               TextFormField(
                 controller: emailController,
                 decoration: InputDecoration(labelText: 'Correo electrónico'),
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value!.isEmpty) {
                     return 'Ingrese su correo';
                   }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    return 'Ingrese un correo válido';
+                  }
                   return null;
                 },
               ),
+              SizedBox(height: 16),
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(labelText: 'Contraseña'),
@@ -122,7 +121,6 @@ class LoginPage extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // Navega a la página de registro
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => RegisterPage()),
