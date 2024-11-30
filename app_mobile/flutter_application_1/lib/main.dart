@@ -48,6 +48,6 @@ class _AuthCheckState extends State<AuthCheck> {
 
   @override
   Widget build(BuildContext context) {
-    return token == null ? const LoginPage() : const WelcomePage();
+    return token == null ? LoginPage() : const WelcomePage();
   }
 }

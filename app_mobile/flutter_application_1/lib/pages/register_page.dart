@@ -1,5 +1,3 @@
-// lib/pages/register_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -12,43 +10,70 @@ class RegisterPage extends StatelessWidget {
       TextEditingController();
 
   Future<void> register(BuildContext context) async {
-    final String apiUrl =
-        'https://api.softnerdapcr.icu/api/register'; // URL del endpoint
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'email': emailController.text,
-        'password': passwordController.text,
-        'confirm_password': confirmPasswordController.text,
-      }),
-    );
+    const String apiUrl = 'https://api.softnerdapcr.icu/api/register';
 
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
-      // Mostrar mensaje de éxito o redirigir al login
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Registro exitoso'),
-          content: Text(responseData['message']),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': emailController.text,
+          'password': passwordController.text,
+          'confirm_password': confirmPasswordController.text,
+        }),
       );
-    } else {
-      // Mostrar un error en caso de fallo
+
+      if (response.statusCode == 200) {
+        // Mostrar mensaje de éxito
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Éxito'),
+            content: Text('Usuario registrado exitosamente.'),
+            actions: [
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Regresar al login
+                },
+              ),
+            ],
+          ),
+        );
+      } else if (response.statusCode == 409) {
+        // Manejar errores de validación desde el servidor
+        final responseData = json.decode(response.body);
+        String errorMessage = responseData['errors'] != null
+            ? responseData['errors'].values.join("\n")
+            : responseData['message'];
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Error'),
+            content: Text(errorMessage),
+            actions: [
+              TextButton(
+                child: Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Manejar otros errores
+        throw Exception('Error inesperado en el servidor.');
+      }
+    } catch (e) {
+      // Manejar errores de conexión
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Error'),
-          content: Text('No se pudo registrar el usuario.'),
+          content: Text('No se pudo conectar al servidor: $e'),
           actions: [
             TextButton(
               child: Text('OK'),
@@ -78,7 +103,9 @@ class RegisterPage extends StatelessWidget {
                 decoration: InputDecoration(labelText: 'Correo electrónico'),
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Ingrese su correo';
+                    return 'Ingrese su correo electrónico.';
+                  } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    return 'Ingrese un correo válido.';
                   }
                   return null;
                 },
@@ -89,31 +116,31 @@ class RegisterPage extends StatelessWidget {
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Ingrese su contraseña';
+                    return 'Ingrese su contraseña.';
+                  } else if (value.length < 8) {
+                    return 'La contraseña debe tener al menos 8 caracteres.';
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: confirmPasswordController,
-                decoration: InputDecoration(labelText: 'Confirmar contraseña'),
+                decoration: InputDecoration(labelText: 'Confirmar Contraseña'),
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Confirme su contraseña';
-                  }
-                  if (value != passwordController.text) {
-                    return 'Las contraseñas no coinciden';
+                    return 'Confirme su contraseña.';
+                  } else if (value != passwordController.text) {
+                    return 'Las contraseñas no coinciden.';
                   }
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    register(
-                        context); // Llamar al método para registrar al usuario
+                    register(context);
                   }
                 },
                 child: Text('Registrar'),
