@@ -13,39 +13,59 @@ class LoginPage extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> login(BuildContext context) async {
-    const String apiUrl =
-        'https://api.softnerdapcr.icu/api/login'; // Coloca tu URL de la API
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'email': emailController.text,
-        'password': passwordController.text,
-      }),
-    );
+    const String apiUrl = 'https://api.softnerdapcr.icu/api/login';
 
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
-      String token = responseData['token'];
-
-      // Almacenar el token usando shared_preferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-
-      // Navegar a la pantalla de bienvenida
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomePage()),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': emailController.text,
+          'password': passwordController.text,
+        }),
       );
-    } else {
-      // Mostrar un error en caso de credenciales inválidas
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        String token = responseData['token'];
+
+        // Almacenar el token usando shared_preferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+
+        // Navegar a la pantalla de bienvenida
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => WelcomePage()),
+        );
+      } else {
+        print('Error response: ${response.body}');
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Error'),
+            content: Text('Correo o contraseña inválidos'),
+            actions: [
+              TextButton(
+                child: Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (error) {
+      print('Error during login: $error');
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Error'),
-          content: Text('Correo o contraseña inválidos'),
+          content: Text('Ocurrió un error al iniciar sesión'),
           actions: [
             TextButton(
               child: Text('OK'),
