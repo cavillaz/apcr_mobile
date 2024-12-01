@@ -11,13 +11,20 @@ class LoginPage extends StatelessWidget {
 
   final Dio dio = Dio(BaseOptions(
     baseUrl: 'https://api.softnerdapcr.icu/api/',
-    connectTimeout: Duration(seconds: 5),
-    receiveTimeout: Duration(seconds: 5),
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 5),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-  ));
+  ))
+    ..interceptors.add(LogInterceptor(
+      request: true,
+      responseBody: true,
+      requestBody: true,
+      error: true,
+      logPrint: (obj) => print(obj),
+    ));
 
   Future<void> login(BuildContext context) async {
     try {
