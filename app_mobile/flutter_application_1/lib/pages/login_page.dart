@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'register_page.dart'; // Importamos la página de registro
-import 'welcome_page.dart'; // Importamos la página de bienvenida
+import 'register_page.dart';
+import 'welcome_page.dart';
 
 class LoginPage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  Future<void> login(BuildContext context) async {
-    const String apiUrl = 'https://api.softnerdapcr.icu/api/login';
+  final Dio dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.softnerdapcr.icu/api/',
+      connectTimeout: const Duration(seconds: 5), // 5 segundos
+      receiveTimeout: const Duration(seconds: 3), // 3 segundos
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
 
+  Future<void> login(BuildContext context) async {
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
+      final response = await dio.post(
+        'login',
+        data: {
           'email': emailController.text,
           'password': passwordController.text,
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
-        // Parsear la respuesta
-        final responseData = json.decode(response.body);
-        String token = responseData['token'];
+        final data = response.data;
+        String token = data['token'];
 
         // Guardar el token en SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -37,7 +42,9 @@ class LoginPage extends StatelessWidget {
         // Navegar a la página de bienvenida
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => WelcomePage()),
+          MaterialPageRoute(
+            builder: (context) => WelcomePage(),
+          ),
         );
       } else {
         // Mostrar mensaje de error si las credenciales no son válidas
@@ -55,13 +62,24 @@ class LoginPage extends StatelessWidget {
           ),
         );
       }
-    } catch (e) {
-      // Manejar errores de conexión
+    } on DioError catch (e) {
+      // Manejo de errores específicos
+      String errorMessage = 'Error desconocido';
+      if (e.response != null) {
+        if (e.response?.statusCode == 401) {
+          errorMessage = 'Credenciales inválidas';
+        } else {
+          errorMessage = e.response?.data['message'] ?? 'Error de servidor';
+        }
+      } else {
+        errorMessage = 'No se pudo conectar al servidor';
+      }
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Error'),
-          content: Text('No se pudo conectar al servidor.'),
+          content: Text(errorMessage),
           actions: [
             TextButton(
               child: Text('OK'),
@@ -118,7 +136,6 @@ class LoginPage extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // Navegar a la página de registro
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => RegisterPage()),
