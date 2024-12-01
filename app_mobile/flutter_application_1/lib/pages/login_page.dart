@@ -9,93 +9,74 @@ class LoginPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: 'https://api.softnerdapcr.icu/api/',
-      connectTimeout: const Duration(seconds: 5), // 5 segundos
-      receiveTimeout: const Duration(seconds: 3), // 3 segundos
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  final Dio dio = Dio(BaseOptions(
+    baseUrl: 'https://api.softnerdapcr.icu/api/',
+    connectTimeout: Duration(seconds: 5),
+    receiveTimeout: Duration(seconds: 5),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  ));
 
   Future<void> login(BuildContext context) async {
     try {
       final response = await dio.post(
         'login',
         data: {
-          'email': emailController.text,
-          'password': passwordController.text,
+          'email': emailController.text.trim(),
+          'password': passwordController.text.trim(),
         },
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        String token = data['token'];
+        final responseData = response.data;
+        final String token = responseData['token'];
 
-        // Guardar el token en SharedPreferences
+        // Mostrar el token para depuración
+        print('Token recibido: $token');
+
+        // Guardar el token en almacenamiento local
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
 
         // Navegar a la página de bienvenida
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => WelcomePage(),
-          ),
+          MaterialPageRoute(builder: (context) => WelcomePage()),
         );
       } else {
-        // Mostrar mensaje de error si las credenciales no son válidas
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Correo o contraseña inválidos.'),
-            actions: [
-              TextButton(
-                child: Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
+        // Manejar errores en la solicitud
+        showErrorDialog(context, 'Correo o contraseña inválidos.');
       }
-    } on DioError catch (e) {
-      // Manejo de errores específicos
-      String errorMessage = 'Error desconocido';
-      if (e.response != null) {
-        if (e.response?.statusCode == 401) {
-          errorMessage = 'Credenciales inválidas';
-        } else {
-          errorMessage = e.response?.data['message'] ?? 'Error de servidor';
-        }
-      } else {
-        errorMessage = 'No se pudo conectar al servidor';
-      }
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text(errorMessage),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
+    } catch (e) {
+      // Manejar errores de conexión
+      showErrorDialog(context, 'No se pudo conectar al servidor.');
+      print('Error: $e');
     }
+  }
+
+  void showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Inicio de Sesión'),
+        title: const Text('Inicio de Sesión'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -106,7 +87,8 @@ class LoginPage extends StatelessWidget {
             children: [
               TextFormField(
                 controller: emailController,
-                decoration: InputDecoration(labelText: 'Correo Electrónico'),
+                decoration:
+                    const InputDecoration(labelText: 'Correo Electrónico'),
                 validator: (value) {
                   if (value!.isEmpty) {
                     return 'Ingrese su correo electrónico.';
@@ -116,7 +98,7 @@ class LoginPage extends StatelessWidget {
               ),
               TextFormField(
                 controller: passwordController,
-                decoration: InputDecoration(labelText: 'Contraseña'),
+                decoration: const InputDecoration(labelText: 'Contraseña'),
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -125,14 +107,14 @@ class LoginPage extends StatelessWidget {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     login(context);
                   }
                 },
-                child: Text('Ingresar'),
+                child: const Text('Ingresar'),
               ),
               TextButton(
                 onPressed: () {
@@ -141,7 +123,7 @@ class LoginPage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => RegisterPage()),
                   );
                 },
-                child: Text('Registro'),
+                child: const Text('Registro'),
               ),
             ],
           ),
