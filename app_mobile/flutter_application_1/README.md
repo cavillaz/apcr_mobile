@@ -16,6 +16,9 @@ For help getting started with Flutter development, view the
 samples, guidance on mobile development, and a full API reference.
 
 ##### Antes de subir al Git se debe de compilar la aplicacion 
-flutter build web 
+flutter build web
+flutter clean 
+flutter pub get
+flutter build apk
 
 ##### y proceder a subir a GIT para que se despliegue en vercel 

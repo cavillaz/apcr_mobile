@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 
 class RegisterPage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
@@ -9,20 +8,25 @@ class RegisterPage extends StatelessWidget {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  Future<void> register(BuildContext context) async {
-    const String apiUrl = 'https://api.softnerdapcr.icu/api/register';
+  final Dio dio = Dio(BaseOptions(
+    baseUrl: 'https://api.softnerdapcr.icu/api/',
+    connectTimeout: Duration(seconds: 5),
+    receiveTimeout: Duration(seconds: 5),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  ));
 
+  Future<void> register(BuildContext context) async {
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
+      final response = await dio.post(
+        'register',
+        data: {
+          'email': emailController.text.trim(),
+          'password': passwordController.text.trim(),
+          'confirm_password': confirmPasswordController.text.trim(),
         },
-        body: json.encode({
-          'email': emailController.text,
-          'password': passwordController.text,
-          'confirm_password': confirmPasswordController.text,
-        }),
       );
 
       if (response.statusCode == 200) {
@@ -30,66 +34,77 @@ class RegisterPage extends StatelessWidget {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Éxito'),
-            content: Text('Usuario registrado exitosamente.'),
+            title: const Text('Éxito'),
+            content: const Text('Usuario registrado exitosamente.'),
             actions: [
               TextButton(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop(); // Regresar al login
+                  Navigator.of(context).pop(); // Cierra el diálogo
+                  Navigator.of(context).pop(); // Regresa al login
                 },
               ),
             ],
           ),
         );
-      } else if (response.statusCode == 409) {
-        // Manejar errores de validación desde el servidor
-        final responseData = json.decode(response.body);
-        String errorMessage = responseData['errors'] != null
-            ? responseData['errors'].values.join("\n")
-            : responseData['message'];
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final responseData = e.response!.data;
+        String errorMessage = '';
 
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text(errorMessage),
-            actions: [
-              TextButton(
-                child: Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
+        // Procesar errores específicos del servidor
+        if (responseData['messages'] != null &&
+            responseData['messages']['errors'] != null) {
+          final errors = responseData['messages']['errors'];
+
+          // Traducir errores al español
+          if (errors['email'] != null &&
+              errors['email'] ==
+                  'The email field must contain a unique value.') {
+            errorMessage = 'El correo electrónico ya está registrado.';
+          } else {
+            // Procesar otros errores
+            errors.forEach((key, value) {
+              errorMessage += '$value\n';
+            });
+          }
+        } else {
+          errorMessage = responseData['message'] ?? 'Error inesperado.';
+        }
+
+        showErrorDialog(context, errorMessage.trim());
       } else {
-        // Manejar otros errores
-        throw Exception('Error inesperado en el servidor.');
+        showErrorDialog(context, 'No se pudo conectar al servidor.');
       }
     } catch (e) {
-      // Manejar errores de conexión
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('No se pudo conectar al servidor: $e'),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
+      // Manejar errores generales
+      print("Error general: $e");
+      showErrorDialog(context, 'Ocurrió un error inesperado.');
     }
+  }
+
+  void showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Registro de Usuario'),
+        title: const Text('Registro de Usuario'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -100,7 +115,8 @@ class RegisterPage extends StatelessWidget {
             children: [
               TextFormField(
                 controller: emailController,
-                decoration: InputDecoration(labelText: 'Correo electrónico'),
+                decoration:
+                    const InputDecoration(labelText: 'Correo Electrónico'),
                 validator: (value) {
                   if (value!.isEmpty) {
                     return 'Ingrese su correo electrónico.';
@@ -112,7 +128,7 @@ class RegisterPage extends StatelessWidget {
               ),
               TextFormField(
                 controller: passwordController,
-                decoration: InputDecoration(labelText: 'Contraseña'),
+                decoration: const InputDecoration(labelText: 'Contraseña'),
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -125,7 +141,8 @@ class RegisterPage extends StatelessWidget {
               ),
               TextFormField(
                 controller: confirmPasswordController,
-                decoration: InputDecoration(labelText: 'Confirmar Contraseña'),
+                decoration:
+                    const InputDecoration(labelText: 'Confirmar Contraseña'),
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -136,14 +153,14 @@ class RegisterPage extends StatelessWidget {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     register(context);
                   }
                 },
-                child: Text('Registrar'),
+                child: const Text('Registrar'),
               ),
             ],
           ),

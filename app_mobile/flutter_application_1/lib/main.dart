@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/login_page.dart';
 import 'pages/welcome_page.dart';
+import 'pages/parqueaderos_page.dart'; // Importa la página de parqueaderos
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +19,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const AuthCheck(),
+      // Configuración de rutas
+      routes: {
+        '/': (context) => const AuthCheck(),
+        '/welcome': (context) => WelcomePage(),
+        '/parqueaderos': (context) => ParqueaderosPage(), // Nueva ruta
+      },
     );
   }
 }
@@ -48,6 +54,8 @@ class _AuthCheckState extends State<AuthCheck> {
 
   @override
   Widget build(BuildContext context) {
-    return token == null ? LoginPage() : const WelcomePage();
+    return token == null
+        ? LoginPage()
+        : WelcomePage(); // Redirige al dashboard si hay un token
   }
 }

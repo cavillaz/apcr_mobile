@@ -1,0 +1,4 @@
+#Mon Dec 02 12:47:54 COT 2024
+base.0=/home/cvilla/Documentos/apcr_mobile/app_mobile/flutter_application_1/build/app/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
