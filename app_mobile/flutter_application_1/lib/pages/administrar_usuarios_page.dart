@@ -79,96 +79,13 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
     }
   }
 
-  Future<void> agregarUsuario() async {
-    const String apiUrl = 'https://api.softnerdapcr.icu/api/residente';
-
-    try {
-      final token = await getToken();
-
-      if (token == null) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Error'),
-            content:
-                const Text('Token no encontrado. Inicia sesión nuevamente.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'correo': correoController.text.trim(),
-          'clave': claveController.text,
-          'nombre_completo': nombreCompletoController.text.trim(),
-          'numero_documento': documentoController.text.trim(),
-          'numero_celular': celularController.text.trim(),
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        fetchUsuarios(); // Actualizar la lista de usuarios
-        Navigator.of(context).pop();
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Éxito'),
-            content: const Text('Usuario registrado exitosamente.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      } else {
-        final data = json.decode(response.body);
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Error'),
-            content: Text(data['message'] ?? 'Error desconocido'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text('Error al conectar con el servidor: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   void mostrarFormularioAgregarUsuario() {
+    correoController.clear();
+    claveController.clear();
+    nombreCompletoController.clear();
+    documentoController.clear();
+    celularController.clear();
+
     showDialog(
       context: context,
       builder: (context) {
@@ -255,11 +172,279 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
     );
   }
 
+  Future<void> agregarUsuario() async {
+    const String apiUrl = 'https://api.softnerdapcr.icu/api/residente';
+
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content:
+                const Text('Token no encontrado. Inicia sesión nuevamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'correo': correoController.text.trim(),
+          'clave': claveController.text,
+          'nombre_completo': nombreCompletoController.text.trim(),
+          'numero_documento': documentoController.text.trim(),
+          'numero_celular': celularController.text.trim(),
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        fetchUsuarios();
+        Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Éxito'),
+            content: const Text('Usuario registrado exitosamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        final data = json.decode(response.body);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text(data['message'] ?? 'Error desconocido'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Error al conectar con el servidor: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void mostrarFormularioEditarUsuario(
+      int idUsuario, Map<String, dynamic> usuario) {
+    correoController.text = usuario['correo'];
+    claveController.clear(); // No mostrar la clave por seguridad
+    nombreCompletoController.text = usuario['nombre_completo'];
+    documentoController.text = usuario['numero_documento'];
+    celularController.text = usuario['numero_celular'];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Editar Usuario'),
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: correoController,
+                  decoration: const InputDecoration(labelText: 'Correo'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el correo.';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: claveController,
+                  decoration: const InputDecoration(labelText: 'Nueva Clave'),
+                  obscureText: true,
+                ),
+                TextFormField(
+                  controller: nombreCompletoController,
+                  decoration:
+                      const InputDecoration(labelText: 'Nombre Completo'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el nombre completo.';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: documentoController,
+                  decoration:
+                      const InputDecoration(labelText: 'Número de Documento'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el número de documento.';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: celularController,
+                  decoration:
+                      const InputDecoration(labelText: 'Número de Celular'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el número de celular.';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  editarUsuario(idUsuario);
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> editarUsuario(int idUsuario) async {
+    final String apiUrl =
+        'https://api.softnerdapcr.icu/api/residente/$idUsuario';
+
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content:
+                const Text('Token no encontrado. Inicia sesión nuevamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final response = await http.put(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'correo': correoController.text.trim(),
+          'clave':
+              claveController.text.isNotEmpty ? claveController.text : null,
+          'nombre_completo': nombreCompletoController.text.trim(),
+          'numero_documento': documentoController.text.trim(),
+          'numero_celular': celularController.text.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        fetchUsuarios();
+        Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Éxito'),
+            content: const Text('Usuario actualizado exitosamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        final data = json.decode(response.body);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text(data['message'] ?? 'Error desconocido'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Error al conectar con el servidor: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Administración de Usuarios'),
+        title: const Text('Administrar Usuarios'),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -293,8 +478,8 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                         child: DataTable(
                           columns: const [
                             DataColumn(label: Text('Correo')),
-                            DataColumn(label: Text('Número de Documento')),
-                            DataColumn(label: Text('Nombre Completo')),
+                            DataColumn(label: Text('Documento')),
+                            DataColumn(label: Text('Nombre')),
                             DataColumn(label: Text('Rol')),
                             DataColumn(label: Text('Acciones')),
                           ],
@@ -304,24 +489,27 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                               DataCell(Text(usuario['numero_documento'])),
                               DataCell(Text(usuario['nombre_completo'])),
                               DataCell(Text(usuario['rol'])),
-                              DataCell(Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.orange),
-                                    onPressed: () {
-                                      // Agregar funcionalidad para editar usuario
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
-                                    onPressed: () {
-                                      // Agregar funcionalidad para eliminar usuario
-                                    },
-                                  ),
-                                ],
-                              )),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.orange),
+                                      onPressed: () {
+                                        mostrarFormularioEditarUsuario(
+                                            int.parse(usuario['id']), usuario);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () {
+                                        // Lógica para eliminar
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ]);
                           }).toList(),
                         ),
