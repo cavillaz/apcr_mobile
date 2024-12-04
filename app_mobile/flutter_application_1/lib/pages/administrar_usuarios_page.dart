@@ -57,11 +57,19 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
         },
       );
 
-      if (response.statusCode == 200) {
+      print('Estado de la respuesta: ${response.statusCode}');
+      print('Cuerpo de la respuesta: ${response.body}');
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
         final data = json.decode(response.body);
 
         setState(() {
-          usuarios = data['tb_usuarios'];
+          usuarios = data['tb_usuarios'] ?? [];
+          isLoading = false;
+        });
+      } else if (response.statusCode == 404) {
+        setState(() {
+          error = 'Recurso no encontrado. Código: 404';
           isLoading = false;
         });
       } else {
@@ -80,7 +88,7 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
   }
 
   Future<void> agregarUsuario() async {
-    const String apiUrl = 'https://api.softnerdapcr.icu/api/residente';
+    const String apiUrl = 'https://api.softnerdapcr.icu/api/residente-insert';
 
     try {
       final token = await getToken();
@@ -119,9 +127,17 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
         }),
       );
 
+      print('Estado de la respuesta: ${response.statusCode}');
+      print('Cuerpo de la respuesta: ${response.body}');
+
       if (response.statusCode == 201) {
-        fetchUsuarios();
+        // Actualiza la lista de usuarios
+        await fetchUsuarios();
+
+        // Cierra el modal antes de mostrar el mensaje de éxito
         Navigator.of(context).pop();
+
+        // Muestra el mensaje de éxito
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -458,7 +474,103 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                               nombreCompletoController.clear();
                               documentoController.clear();
                               celularController.clear();
-                              agregarUsuario();
+
+                              // Mostrar formulario de agregar usuario
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text('Agregar Usuario'),
+                                    content: Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextFormField(
+                                            controller: correoController,
+                                            decoration: const InputDecoration(
+                                                labelText: 'Correo'),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Por favor ingrese el correo.';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          TextFormField(
+                                            controller: claveController,
+                                            decoration: const InputDecoration(
+                                                labelText: 'Clave'),
+                                            obscureText: true,
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Por favor ingrese la clave.';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          TextFormField(
+                                            controller:
+                                                nombreCompletoController,
+                                            decoration: const InputDecoration(
+                                                labelText: 'Nombre Completo'),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Por favor ingrese el nombre completo.';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          TextFormField(
+                                            controller: documentoController,
+                                            decoration: const InputDecoration(
+                                                labelText:
+                                                    'Número de Documento'),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Por favor ingrese el número de documento.';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          TextFormField(
+                                            controller: celularController,
+                                            decoration: const InputDecoration(
+                                                labelText: 'Número de Celular'),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Por favor ingrese el número de celular.';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: const Text('Cancelar'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          if (_formKey.currentState!
+                                              .validate()) {
+                                            agregarUsuario(); // Llamada al método de inserción
+                                          }
+                                        },
+                                        child: const Text('Guardar'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
                             },
                             icon: const Icon(Icons.person_add),
                             label: const Text('Agregar Usuario'),
@@ -512,9 +624,9 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                                             TextButton(
                                               onPressed: () {
                                                 Navigator.of(context)
-                                                    .pop(); // Cierra el diálogo
+                                                    .pop(); // Cerrar el diálogo
                                                 eliminarUsuario(int.parse(usuario[
-                                                    'id'])); // Llama a la función
+                                                    'id'])); // Llamar a la función
                                               },
                                               child: const Text('Eliminar'),
                                             ),
