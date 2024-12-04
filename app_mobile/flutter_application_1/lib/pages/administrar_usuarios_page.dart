@@ -79,99 +79,6 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
     }
   }
 
-  void mostrarFormularioAgregarUsuario() {
-    correoController.clear();
-    claveController.clear();
-    nombreCompletoController.clear();
-    documentoController.clear();
-    celularController.clear();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Agregar Usuario'),
-          content: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: correoController,
-                  decoration: const InputDecoration(labelText: 'Correo'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el correo.';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: claveController,
-                  decoration: const InputDecoration(labelText: 'Clave'),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese la clave.';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: nombreCompletoController,
-                  decoration:
-                      const InputDecoration(labelText: 'Nombre Completo'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el nombre completo.';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: documentoController,
-                  decoration:
-                      const InputDecoration(labelText: 'Número de Documento'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el número de documento.';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: celularController,
-                  decoration:
-                      const InputDecoration(labelText: 'Número de Celular'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el número de celular.';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  agregarUsuario();
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> agregarUsuario() async {
     const String apiUrl = 'https://api.softnerdapcr.icu/api/residente';
 
@@ -349,6 +256,86 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
     );
   }
 
+  Future<void> eliminarUsuario(int id) async {
+    final String apiUrl = 'https://api.softnerdapcr.icu/api/residente/$id';
+
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content:
+                const Text('Token no encontrado. Inicia sesión nuevamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        fetchUsuarios(); // Refrescar la lista después de eliminar
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Éxito'),
+            content: const Text('Usuario eliminado correctamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        final data = json.decode(response.body);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text(data['message'] ?? 'Error desconocido'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Error al conectar con el servidor: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> editarUsuario(int idUsuario) async {
     final String apiUrl =
         'https://api.softnerdapcr.icu/api/residente/$idUsuario';
@@ -444,7 +431,7 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Administrar Usuarios'),
+        title: const Text('Administración de Usuarios'),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -465,7 +452,14 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                             ),
                           ),
                           ElevatedButton.icon(
-                            onPressed: mostrarFormularioAgregarUsuario,
+                            onPressed: () {
+                              correoController.clear();
+                              claveController.clear();
+                              nombreCompletoController.clear();
+                              documentoController.clear();
+                              celularController.clear();
+                              agregarUsuario();
+                            },
                             icon: const Icon(Icons.person_add),
                             label: const Text('Agregar Usuario'),
                           ),
@@ -478,8 +472,8 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                         child: DataTable(
                           columns: const [
                             DataColumn(label: Text('Correo')),
-                            DataColumn(label: Text('Documento')),
-                            DataColumn(label: Text('Nombre')),
+                            DataColumn(label: Text('Número de Documento')),
+                            DataColumn(label: Text('Nombre Completo')),
                             DataColumn(label: Text('Rol')),
                             DataColumn(label: Text('Acciones')),
                           ],
@@ -489,27 +483,48 @@ class _AdministrarUsuariosPageState extends State<AdministrarUsuariosPage> {
                               DataCell(Text(usuario['numero_documento'])),
                               DataCell(Text(usuario['nombre_completo'])),
                               DataCell(Text(usuario['rol'])),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit,
-                                          color: Colors.orange),
-                                      onPressed: () {
-                                        mostrarFormularioEditarUsuario(
-                                            int.parse(usuario['id']), usuario);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: () {
-                                        // Lógica para eliminar
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              DataCell(Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.orange),
+                                    onPressed: () {
+                                      mostrarFormularioEditarUsuario(
+                                          int.parse(usuario['id']), usuario);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Confirmación'),
+                                          content: const Text(
+                                              '¿Estás seguro de que deseas eliminar este usuario?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context)
+                                                    .pop(); // Cierra el diálogo
+                                                eliminarUsuario(int.parse(usuario[
+                                                    'id'])); // Llama a la función
+                                              },
+                                              child: const Text('Eliminar'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              )),
                             ]);
                           }).toList(),
                         ),
